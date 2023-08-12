@@ -1,11 +1,11 @@
 %% Simulation Data
 
-time = out.fullstate.time;
+time = out.animation.time;
 N = length(time);
 
-theta = out.fullstate.signals.values(:,1);
-wp = out.fullstate.signals.values(:,2);
-wm = out.fullstate.signals.values(:,3);
+theta = out.animation.signals.values(:,1);
+wp = out.animation.signals.values(:,2);
+wm = out.animation.signals.values(:,3);
 phi = zeros(1,N);
 for i = 2:N
    dt = time(i) - time(i-1);
