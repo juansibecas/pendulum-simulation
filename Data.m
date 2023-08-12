@@ -23,6 +23,7 @@ bp = 0.038;                                     % N*s/m (Coeficiente de fricció
 % DC Motor Model (RS 440 329)
 J_motor = 2.38e-5;  % kg*m^2 (Momento de inercia del rotor)
 V_nom = 24;         % V (Tensión nominal)
+I_nom = 1;          % A (Corriente nominal)
 bm = 0.018;         % N*s/m (Coeficiente de fricción del rotor)
 La = 3.2e-3;        % H (Inductancia del motor)
 Ra = 40.8;          % Ohm (Resistencia del bobinado)
@@ -47,115 +48,92 @@ A = [0          1       0       0;
 B = [0 0 0 1/La]';
 
 % Inclinómetro
-C_acc = [1 0 0 0];
+C = [1 0 0 0];
 
-D_acc = 0;
+D = 0;
 
-% Inclinómetro + Encoder en la rueda
-C_acc_enc = [1 0 0 0;
-             0 0 1 0];
-
-D_acc_enc = zeros(2, 1);
-
-% Inclinómetro + Doble Encoder
-
-C_acc_double_enc = [1 0 0 0;
-                    0 0 1 0;
-                    0 1 0 0];
-                
-D_acc_double_enc = zeros(3,1);
+opensys = ss(A, B, C, D);
 
 %% Controlabilidad
-
-% Inclinómetro
-opensys_acc = ss(A, B, C_acc, D_acc);
-% Inclinómetro + Encoder en la rueda
-opensys_acc_enc = ss(A, B, C_acc_enc, D_acc_enc);
-% Inclinómetro + Doble Encoder
-opensys_acc_double_enc = ss(A, B, C_acc_double_enc, D_acc_double_enc);
-
-controlability = ctrb(opensys_acc);
-
+controlability = ctrb(opensys);
 
 %% Observabilidad
-observability = zeros(3,1);
-
-observability(1) = rank(obsv(opensys_acc));
-observability(2) = rank(obsv(opensys_acc_enc));
-observability(3) = rank(obsv(opensys_acc_double_enc));
+observability = obsv(opensys);
 
 
 %% Linear Quadratic Regulator - Control de estabilidad
-R = 0.1;    % Costo de entrada
 
-% Regla de Bryson - Costo de cada estado
+th_max = 10*pi/180;  % Valor maximo para theta 10 grados
+wp_max = 5;          % Velocidad angular maxima pendulo 5rad/s
+wm_max = 30;         % Velocidad angular maxima motor 30rad/s
 
-Q = [1   0     0   0;
-     0   0.5   0   0;
-     0   0     0.1 0;
-     0   0     0   0.1];
+% Regla de Bryson - Costo de cada estado sobre "valor maximo" al cuadrado
+
+R = 1/V_nom^2;    % Costo de entrada
+
+Q_th = 1/th_max^2;
+Q_wp = 1/wp_max^2;
+Q_wm = 1/wm_max^2;
+Q_ia = 1/I_nom^2;
+
+Q = [Q_th   0     0     0;
+     0      Q_wp  0     0;   % Se puede agregar un costo cruzado wp*ia para
+     0      0     Q_wm  0;   % limitar la potencia
+     0      0     0     Q_ia];
 
 % LQR
 
 [K, S, Pcl] = lqr(A, B, Q, R);
 
+%% Especificación de sensores
+
+% IMU dinamica y LPF
+fs_IMU = 1000;          % Frecuencia de muestreo
+wd_IMU = 30000*2*pi;     % Frecuencia natural del IMU
+
+
+% Giroscopio
+PSD_gyro = 0.005;       % Amplitud densidad espectral de potencia [degrees per second/root-Hz] - MPU6050 datasheet
+wgyro_LPF = 42*2*pi;      % Frecuencia de corte del LPF
+gyro_noise_power = (PSD_gyro*pi/180)^2 * wgyro_LPF/(2*pi); % Potencia de ruido blanco
+
+% Acelerometro
+PSD_acc = 400e-6;       % Amplitud densidad espectral de potencia [micro-g/root-Hz] - MPU6050 datasheet
+wacc_LPF = 44*2*pi;      % Frecuencia de corte del LPF
+acc_noise_power = (PSD_acc*g)^2 * wacc_LPF/(2*pi);  % Potencia de ruido blanco
+
 
 %% Observador de Kalman
 
-q = 1e-10;       % Ruido de proceso / Ruido de sensores
+%Torque nominal 0.575
+%Torque con variacion de inductancia 0.575
+%Son iguales, la incertidumbre en inductancia no cambia nada
+
+Tl = 0;         % Torque de perturbacion (ruido de proceso)
+
+q = 1e-10;       % Ruido de proceso
   
 Qe = B*q*B';
 
-r = 1.54e-5;
+r = 5.924e-5;    % Ruido de sensores
 
 Re = [r];
 
 % LQR para observador
 
 % Inclinómetro
-[L_t, ~, ~] = lqr(A', C_acc', Qe, Re);
+[L_t, ~, ~] = lqr(A', C', Qe, Re);
 
-L_acc = L_t';
-
-% Inclinómetro + Encoder en la rueda
-[L_t, ~, ~] = lqr(A', C_acc_enc', Qe, Re);
-
-L_acc_enc = L_t';
-
-% Inclinómetro + Doble Encoder
-[L_t, ~, ~] = lqr(A', C_acc_double_enc', Qe, Re);
-
-L_acc_double_enc = L_t';
+L = L_t';
 
 %% Control de balanceo
 
 Ksw = 0.035;
 
-%% Especificación de sensores
-
-% Giroscopio
-PSD_gyro = 0.005;       % Power Spectral Density Amplitude [degrees per second/root-Hz] - MPU6050 datasheet
-gyro_noise_power = (PSD_gyro*pi/180)^2; % Potencia de ruido blanco
-gyro_bias = 0.05;
-
-% Acelerometro
-PSD_acc = 400e-6;       % Power Spectral Density Amplitude [micro-g/root-Hz] - MPU6050 datasheet
-acc_noise_power = (PSD_acc*g)^2;  % Potencia de ruido blanco
-acc_bias = 0;
-
-% IMU dinamica y LPF
-fs_IMU = 1000;          % Frecuencia de muestreo
-zetad_IMU = sqrt(2)/2;  % Amortiguamiento del IMU
-wd_IMU = 30000*2*pi;     % Frecuencia natural del IMU
-zetaf_IMU = sqrt(2)/2;  % Amortiguamiento del LPF
-wf_IMU = 40*2*pi;      % Frecuencia de corte del LPF
-delay_IMU = 5e-3;       % Delay del LPF
-
-
 %% Simulink
 
 % Condiciones iniciales
-x0 = [0.2 0 0 0];
+x0 = [0.3 0 0 0];
 x0_sw = [pi 0 0 0];
 
 % State Space Block
@@ -163,17 +141,17 @@ C_FullState = eye(4);
 D1 = zeros(4,1);
 
 % Filtro complementario
-simulation_dt = 0.001;
 alpha = 0.99;
 
 % Altura del acelerometro
 ideal_acc_height = 0;
-real_acc_height = L1/3;
+real_acc_height = 0.02; %cm
 
+%Frecuencia angular para bloque derivador
+w_deriv = (fs_IMU*2*pi)/20;
 
-
-
-
+%Tiempo de muestreo para bloques de ruido blanco
+t_noise = 1/fs_IMU;
 
 
 
