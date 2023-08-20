@@ -5,9 +5,9 @@ clc
 g = 9.81;       % m/s^2 (Gravedad)
 
 % Sistema Mecánico
-mw = 0.2; 	% Kg (Masa de la Rueda) - Brida
+mw = 0.25; 	% Kg (Masa de la Rueda) - Brida
 ma = 0.060;     % Kg (Masa del brazo)
-mm = 0.18;       % Kg (Masa del motor) - En el extremo
+mm = 0.070;       % Kg (Masa del motor) - En el extremo
 mp = ma + mm;   % Kg (Masa del péndulo)
 
 r2 = 0.13;                      % m (Radio anillo)
@@ -19,19 +19,20 @@ Jp = ma * L2^2 / 12;                            % Kg*m^2 (Momento de inercia del
 Jp_O = Jp + ma * (L2/2)^2 + (mm + mw) * L2^2;   % Kg*m^2 (Momento de inercia del péndulo respecto a la articulación pasiva) 
 
 % Supuesto tal que el torque de friccion maximo = 10% del torque maximo del
-% motor (0.49N*m) -> 0.049N*m / 10 rad/s = 0.049 N*m/(rad/s)
-bp = 0.049/2;     % N*m/(rad/s) (Coeficiente de fricción en la articulación pasiva)
+% motor (0.49N*m) -> 0.049N*m / 10 rad/s = 0.0049 N*m/(rad/s)
+bp = 0.03;     % N*m/(rad/s) (Coeficiente de fricción en la articulación pasiva)
 
-% DC Motor Model (Maxon A-max 26 110212)
-gear = 14;
-J_motor = 12.5e-7;        % kg*m^2 (Momento de inercia del rotor)
-V_nom = 24;         % V (Tensión nominal)
-I_nom = 0.312;          % A (Corriente nominal)
-bm = 0;        % N*m/(rad/s) (Coeficiente de fricción del rotor)
-Ra = 30.1;            % Ohm (Resistencia del bobinado)30*60
-Kt = 50.3e-3*gear;        % N*m/A (Constante de torque)
-Ke = Kt;        % V/(rad/s) (Constante de FCEM)
-La = 2.99e-3; % H (Inductancia del motor)
+% DC Motor Model (Maxon DCX 16 L 24V)
+% maxongroup.es/medias/sys_master/root/8992244629534/EN-22-103.pdf
+gear = 22;
+J_motor = 2.23e-7;              % kg*m^2 (Momento de inercia del rotor)
+V_nom = 24;                     % V (Tensión nominal)
+I_nom = 1.06;                   % A (Corriente nominal)
+Ra = 22.7;                      % Ohm (Resistencia del bobinado)
+Kt = gear*34.7e-3;              % N*m/A (Constante de torque)
+Ke = gear*34.7e-3;              % V/(rad/s) (Constante de FCEM)
+La = 1.56e-3;                  % H (Inductancia del motor)
+bm = Kt*0.00805/(6560*2*pi/60);  % N*m/(rad/s) (Coeficiente de fricción del rotor)
 
 
 % Abreviaciones
@@ -67,7 +68,7 @@ observability = obsv(opensys);
 %% Linear Quadratic Regulator - Control de estabilidad
 
 th_max = 10*pi/180;  % Valor maximo para theta 10 grados
-wp_max = 5;          % Velocidad angular maxima pendulo 5rad/s
+wp_max = 2;          % Velocidad angular maxima pendulo 5rad/s
 wm_max = 20;         % Velocidad angular maxima motor 30rad/s
 
 % Regla de Bryson - Costo de cada estado sobre "valor maximo" al cuadrado
@@ -87,6 +88,8 @@ Q = [Q_th   0     0     0;
 % LQR
 
 [K, S, Pcl] = lqr(A, B, Q, R);
+
+closedsys = ss(A-B*K, B, C, D);
 
 %% Especificación de sensores
 
@@ -131,14 +134,15 @@ L = L_t';
 
 %% Control de balanceo
 
-Ken = 100;
-Kw = 0.1;
-Ku = V_nom;
+Ken = 750;
+Kw = 90;
+Ku = 0.4;
 
 %% Simulink
-
+F = 0;
+theta_c = 0.5; % Angulo de conmutacion de controlador
 % Condiciones iniciales
-x0 = [0.3 0 0 0];
+x0 = [0.5 0 0 0];
 x0_sw = [pi 0 0 0];
 
 % State Space Block
@@ -146,7 +150,7 @@ C_FullState = eye(4);
 D1 = zeros(4,1);
 
 % Filtro complementario
-alpha = 0.97;
+alpha = 0.99;
 
 % Altura del acelerometro
 ideal_acc_height = 0;
