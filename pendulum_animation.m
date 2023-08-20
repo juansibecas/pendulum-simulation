@@ -6,6 +6,7 @@ N = length(time);
 theta = out.animation.signals.values(:,1);
 wp = out.animation.signals.values(:,2);
 wm = out.animation.signals.values(:,3);
+ia = out.animation.signals.values(:,4);
 phi = zeros(1,N);
 for i = 2:N
    dt = time(i) - time(i-1);
@@ -17,6 +18,7 @@ end
 theta_handle = @(t) interp1(time, theta, t, 'linear');
 wp_handle = @(t) interp1(time, wp, t, 'linear');
 wm_handle = @(t) interp1(time, wm, t, 'linear');
+ia_handle = @(t) interp1(time, ia, t, 'linear');
 phi_handle = @(t) interp1(time, phi, t, 'linear');
 
 
@@ -52,6 +54,32 @@ fplot(@(t) theta_handle(t))
 fplot(@(t) phi_handle(t))
 legend('pendulum', 'wheel')
 
+%% Respuesta completa de los 4 estados
+
+figure(3)
+subplot(2, 2, 1);
+fplot(@(t) theta_handle(t), 'linewidth', 2)
+xlabel('Tiempo(s)')
+ylabel('theta(rad)')
+grid on
+
+subplot(2, 2, 2);
+fplot(@(t) wp_handle(t), 'color', '#f58231', 'linewidth', 2)
+xlabel('Tiempo(s)')
+ylabel('wp(rad/s)')
+grid on
+
+subplot(2, 2, 3);
+fplot(@(t) wm_handle(t), 'color', '#e6194B', 'linewidth', 2)
+xlabel('Tiempo(s)')
+ylabel('wm(rad/s)')
+grid on
+
+subplot(2, 2, 4);
+fplot(@(t) ia_handle(t), 'color', '#3cb44b', 'linewidth', 2)
+xlabel('Tiempo(s)')
+ylabel('Ia(A)')
+grid on
 
 
 
