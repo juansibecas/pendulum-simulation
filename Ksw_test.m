@@ -3,14 +3,14 @@
 %% del movimiento y la rapidez para lograr la elevacion
 %% Ksw = 0.17 es mas rapido
 
-Ksw_v = -10:0.1:10;
+Kw_v = 0:10:1000;
 warning('off', 'all')
-N = length(Ksw_v);
+N = length(Kw_v);
 height_reached = zeros(1, N);
 time2reach0 = zeros(1,N);
 tic
 for i = 1:N
-    Ksw = Ksw_v(i);
+    Kw = Kw_v(i);
     
     out = sim('swingup_control');
     
@@ -48,7 +48,11 @@ for i = 1:N
 end
 
 figure(2)
-plot(Ksw_v, height_reached)
+plot(Kw_v, height_reached, 'linewidth', 2)
+xlabel('k_w')
+ylabel('Ángulo alcanzado(rad)')
 
 figure(3)
-plot(Ksw_v, time2reach0)
+plot(Kw_v, time2reach0, 'linewidth', 2)
+xlabel('k_w')
+ylabel('Tiempo de elevación(s)')
