@@ -1,17 +1,8 @@
 %% Robustez, estabilidad y comportamiento dinamico del controlador
 
-R_rob = 1;    % Costo de entrada
-
-% Regla de Bryson - Costo de cada estado
-
-Q_rob = [1      0     0     0;
-         0      0.5   0     0;
-         0      0     0.1   0;
-         0      0     0     0.1];
-
 % LQR
 
-[K_rob, S, Pcl] = lqr(A, B, Q_rob, R_rob);
+[K_rob, S, Pcl] = lqr(A, B, Q, R);
 
 closedsys_rob = ss(A-B*K_rob, B, C, D);
 
