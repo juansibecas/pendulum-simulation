@@ -154,7 +154,7 @@ alpha = 0.99;
 
 % Altura del acelerometro
 ideal_acc_height = 0;
-real_acc_height = 0.02; %cm
+real_acc_height = 0.02; %m
 
 %Frecuencia angular para bloque derivador
 w_deriv = (fs_IMU*2*pi)/20;
