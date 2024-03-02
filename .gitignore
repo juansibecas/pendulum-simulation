@@ -313,33 +313,33 @@ TSWLatexianTemp*
 
 ### MATLAB ###
 # Windows default autosave extension
-*.asv
+/scripts/*.asv
 
 # OSX / *nix default autosave extension
-*.m~
+/scripts/*.m~
 
 # Compiled MEX binaries (all platforms)
-*.mex*
+/scripts/*.mex*
 
 # Packaged app and toolbox files
-*.mlappinstall
-*.mltbx
+/scripts/*.mlappinstall
+/scripts/*.mltbx
 
 # Generated helpsearch folders
 helpsearch*/
 
 # Simulink code generation folders
-slprj/
-sccprj/
+/models/slprj/
+/models/sccprj/
 
 # Matlab code generation folders
-codegen/
+/models/codegen/
 
 # Simulink autosave extension
-*.autosave
+/models/*.autosave
 
 # Simulink cache files
-*.slxc
+/models/*.slxc
 
 # Octave session info
 octave-workspace

@@ -2,7 +2,7 @@ clear
 clc
 %% Data
 
-g = 9.81;       % m/s^2 (Gravedad)
+g = 5;       % m/s^2 (Gravedad)
 
 % Sistema Mecánico
 mw = 0.25; 	% Kg (Masa de la Rueda) - Brida
